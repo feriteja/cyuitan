@@ -2,32 +2,33 @@
 package main
 
 import (
+	"log"
+
 	"github.com/feriteja/cyuitan/database"
-	"github.com/feriteja/cyuitan/handlers"
 	"github.com/feriteja/cyuitan/models"
+	"github.com/feriteja/cyuitan/routes"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	// Initialize database connection
 	db, err := database.Init()
 	if err != nil {
 		panic("failed to connect database")
 	}
-	defer db.Close()
 
 	// AutoMigrate User model
-	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.User{}, &models.Auth{}, &models.Post{}, &models.Comment{}, &models.Profile{})
 
 	// Initialize Gin router
 	r := gin.Default()
 
 	// Routes
-	r.GET("/users", handlers.GetUsers)
-	r.GET("/users/:id", handlers.GetUser)
-	r.POST("/users", handlers.CreateUser)
-	r.PUT("/users/:id", handlers.UpdateUser)
-	r.DELETE("/users/:id", handlers.DeleteUser)
+	routes.SetupUserRoutes(r)
 
 	// Start server
 	r.Run(":8080")
