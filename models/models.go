@@ -7,7 +7,7 @@ import "gorm.io/gorm"
 type User struct {
 	gorm.Model
 	AuthID    uint      `json:"auth_id"`
-	ProfileID uint      `json:"profile_id"`
+	ProfileID *uint     `json:"profile_id"`
 	Auth      Auth      `json:"auth" gorm:"foreignkey:AuthID"`
 	Profile   Profile   `json:"profile" gorm:"foreignkey:ProfileID"`
 	Posts     []Post    `json:"posts"`

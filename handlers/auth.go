@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -64,8 +65,21 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	// Validate email format
+	if !isValidEmail(req.Email) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid email format"})
+		return
+	}
+
+	// Validate password format
+	if !isValidPassword(req.Password) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password at least 8 character"})
+		return
+	}
+
 	if req.ConfirmPassword != req.Password {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password doesn't match"})
+		return
 	}
 	// Check if the email is already registered
 	if isEmailRegistered(req.Email) {
@@ -95,7 +109,8 @@ func Register(c *gin.Context) {
 
 	// Create a new user record
 	user := models.User{
-		AuthID: auth.ID,
+		AuthID:    auth.ID,
+		ProfileID: nil,
 	}
 
 	// Save the user record to the database
@@ -146,4 +161,16 @@ func generateToken(userID uint, status int) (string, error) {
 	}
 
 	return tokenString, nil
+}
+
+// Function to validate email format
+func isValidEmail(email string) bool {
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	return emailRegex.MatchString(email)
+}
+
+// Function to validate password format
+func isValidPassword(password string) bool {
+	return len(password) >= 8
+
 }
