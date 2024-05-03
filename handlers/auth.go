@@ -3,6 +3,7 @@ package handlers
 
 import (
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 
@@ -22,6 +23,12 @@ type RegisterRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type JwtInfo struct {
+	UserId int
+	Status int
+	Email  string
 }
 
 // Login handler
@@ -46,8 +53,20 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	var user models.User
+	if err := database.DB.Where("auth_id = ?", auth.ID).First(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	jwtInfo := JwtInfo{
+		UserId: int(user.ID),
+		Status: auth.Status,
+		Email:  auth.Email,
+	}
+
 	// Generate JWT token
-	token, err := generateToken(auth.UserID, auth.Status)
+	token, err := generateToken(jwtInfo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -119,7 +138,13 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	token, err := generateToken(user.ID, auth.Status)
+	jwtInfo := JwtInfo{
+		UserId: int(user.ID),
+		Status: auth.Status,
+		Email:  auth.Email,
+	}
+
+	token, err := generateToken(jwtInfo)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
@@ -144,18 +169,20 @@ func hashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
-func generateToken(userID uint, status int) (string, error) {
+func generateToken(jwtInfo JwtInfo) (string, error) {
 	// Create a new JWT token
 	token := jwt.New(jwt.SigningMethodHS256)
+	jwtSecret := os.Getenv("JWT_SECRET_KEY")
 
 	// Set claims
 	claims := token.Claims.(jwt.MapClaims)
-	claims["user_id"] = userID
-	claims["status"] = status
+	claims["user_id"] = jwtInfo.UserId
+	claims["status"] = jwtInfo.Status
+	claims["email"] = jwtInfo.Email
 	claims["exp"] = time.Now().Add(time.Hour * 24).Unix() // Token expiry time (e.g., 24 hours)
 
 	// Sign the token with a secret key
-	tokenString, err := token.SignedString([]byte("your-secret-key"))
+	tokenString, err := token.SignedString([]byte(jwtSecret))
 	if err != nil {
 		return "", err
 	}
