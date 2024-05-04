@@ -9,8 +9,13 @@ import (
 
 // Set up routes related to users
 func SetupPostRoutes(router *gin.Engine) {
-	userRoutes := router.Group("/post", middleware.AuthMiddleware())
+	postRoute := router.Group("/post", middleware.AuthMiddleware())
 	{
-		userRoutes.POST("/", handlers.SendPost)
+		postRoute.POST("/", handlers.SendPost)
+		postRoute.POST("/edit", handlers.EditPost)
+	}
+	postRoutes := router.Group("/posts")
+	{
+		postRoutes.GET("/", handlers.GetPosts)
 	}
 }

@@ -138,6 +138,13 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	auth.UserID = user.ID
+
+	if err := database.DB.Save(&auth).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	jwtInfo := JwtInfo{
 		UserId: int(user.ID),
 		Status: auth.Status,
