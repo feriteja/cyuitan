@@ -12,7 +12,7 @@ func SetupPostRoutes(router *gin.Engine) {
 	postRoute := router.Group("/post", middleware.AuthMiddleware())
 	{
 		postRoute.POST("/", handlers.SendPost)
-		postRoute.POST("/edit", handlers.EditPost)
+		postRoute.PUT("/", handlers.EditPost)
 	}
 	postRoutes := router.Group("/posts")
 	{
