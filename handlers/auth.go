@@ -145,6 +145,24 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	profile := models.Profile{
+		Name:           "",
+		UserID:         user.ID,
+		ProfilePicture: "",
+	}
+
+	if err := database.DB.Create(&profile).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user record"})
+		return
+	}
+
+	user.ProfileID = &profile.ID
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	jwtInfo := JwtInfo{
 		UserId: int(user.ID),
 		Status: auth.Status,
